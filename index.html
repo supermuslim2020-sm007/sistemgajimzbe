@@ -1,401 +1,1055 @@
-<!DOCTYPE html>
-<html lang="ms">
+<!doctype html>
+<html lang="ms" class="h-full">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistem Gaji - Muiz Banner Empire</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
-        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3b82f6; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Gaya Logo Flat - Tiada Box, Tiada Shadow, Tiada Border */
-        .logo-flat { 
-            background: transparent !important; 
-            border: none !important; 
-            box-shadow: none !important; 
-            border-radius: 0 !important; 
-            padding: 0 !important; 
-            outline: none !important;
-            display: block;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SISTEM GAJI - MUIZ BANNER EMPIRE</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Plus Jakarta Sans', sans-serif; text-transform: uppercase; }
+    .gradient-bg { background: linear-gradient(135deg, #1e3a5f 0%, #0d1f33 100%); }
+    .card-shadow { box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade { animation: fadeIn 0.3s ease-out; }
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+    body { box-sizing: border-box; }
+    input[type="password"] { text-transform: none; } /* KECUALIKAN PASSWORD DARI UPPERCASE */
+    
+    /* Loading Spinner */
+    .loader {
+      border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #f59e0b;
+      width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
 </head>
-<body class="antialiased text-slate-800">
-    <div id="root"></div>
+<body class="h-full bg-slate-100 uppercase">
+  <div id="app" class="h-full overflow-auto">
+    
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-full flex items-center justify-center p-4 gradient-bg">
+      <div class="glass rounded-2xl card-shadow p-8 w-full max-w-md animate-fade">
+        <div class="text-center mb-8">
+          <!-- Ruangan Logo Ganti Ikon SVG -->
+          <img src="logo.png" alt="MUIZ BANNER EMPIRE LOGO" class="mx-auto h-24 w-auto object-contain mb-4 drop-shadow-md" onerror="this.src='https://placehold.co/400x150/ffffff/1e3a5f?text=MUIZ+BANNER+EMPIRE'">
+          <h1 class="text-xl font-bold text-slate-800 mt-2">MUIZ BANNER EMPIRE</h1>
+          <p class="text-slate-500 text-sm mt-1 font-semibold tracking-wider">SISTEM PENGURUSAN GAJI (CLOUD)</p>
+        </div>
+        <div id="login-form">
+          <div class="mb-4">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">KOD PEKERJA / USERNAME</label>
+            <input type="text" id="login-username" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-500 focus:outline-none transition" placeholder="MASUKKAN KOD PEKERJA">
+          </div>
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">KATA LALUAN</label>
+            <input type="password" id="login-password" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-amber-500 focus:outline-none transition normal-case" placeholder="MASUKKAN KATA LALUAN">
+          </div>
+          <button onclick="handleLogin()" id="btn-login" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-amber-700 transition shadow-lg flex justify-center items-center gap-2"> 
+            LOG MASUK 
+          </button>
+          <p id="login-error" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+        </div>
+      </div>
+    </div>
 
-    <!-- Modul Firebase -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden min-h-full flex flex-col">
+      <!-- Header -->
+      <header class="gradient-bg text-white px-6 py-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <!-- Ikon Logo Kecil di Papan Pemuka -->
+            <div class="bg-white/95 p-1.5 rounded-lg shadow-inner flex items-center justify-center">
+                <img src="logo.png" alt="Logo" class="h-10 w-auto object-contain" onerror="this.style.display='none'">
+            </div>
+            <div>
+              <h1 class="font-bold text-lg flex items-center gap-2">MUIZ BANNER EMPIRE <span id="cloud-status" class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" title="BERSAMBUNG KE AWAN"></span></h1>
+              <p class="text-xs text-slate-300 tracking-wide">SISTEM PENGURUSAN GAJI</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <p class="text-sm font-bold text-amber-300 drop-shadow-sm" id="user-display"></p>
+              <p class="text-xs text-slate-300" id="role-display"></p>
+            </div>
+            <button id="btn-update-ic" onclick="openICModal()" class="hidden px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs font-semibold tracking-wider transition"> 📝 KEMASKINI NO. KP </button>
+            <button onclick="handleLogout()" class="px-4 py-2.5 bg-red-500/90 hover:bg-red-600 rounded-lg text-xs font-bold tracking-wider transition shadow-md"> LOG KELUAR </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Filters -->
+      <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+          <div class="flex flex-wrap items-center gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">TAHUN</label>
+              <select id="filter-year" onchange="applyFilters()" class="px-4 py-2 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none bg-slate-50">
+                <option value="">SEMUA TAHUN</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 mb-1">BULAN</label>
+              <select id="filter-month" onchange="applyFilters()" class="px-4 py-2 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none bg-slate-50">
+                <option value="">SEMUA BULAN</option>
+                <option value="1">JANUARI</option>
+                <option value="2">FEBRUARI</option>
+                <option value="3">MAC</option>
+                <option value="4">APRIL</option>
+                <option value="5">MEI</option>
+                <option value="6">JUN</option>
+                <option value="7">JULAI</option>
+                <option value="8">OGOS</option>
+                <option value="9">SEPTEMBER</option>
+                <option value="10">OKTOBER</option>
+                <option value="11">NOVEMBER</option>
+                <option value="12">DISEMBER</option>
+              </select>
+            </div>
+            <div id="admin-actions" class="hidden ml-auto flex gap-3">
+              <button id="btn-import" onclick="importFeb2026Data()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-sm rounded-xl hover:from-blue-700 hover:to-blue-800 transition shadow-md flex items-center justify-center gap-2"> 📥 IMPORT DATA FEB 2026 </button>
+              <button onclick="openAddModal()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition shadow-md"> ➕ TAMBAH REKOD </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <main class="flex-1 p-6 bg-slate-100">
+        <div class="max-w-7xl mx-auto">
+          <div id="loading-records" class="text-center py-16 hidden">
+             <div class="loader mb-4" style="width: 40px; height: 40px; border-width: 4px;"></div>
+             <p class="text-slate-500 font-semibold tracking-wider">MEMUAT TURUN DATA DARI AWAN...</p>
+          </div>
+          <div id="salary-list" class="grid gap-6">
+            <!-- Salary cards will be rendered here -->
+          </div>
+          <div id="no-records" class="hidden text-center py-16">
+            <div class="w-24 h-24 mx-auto mb-4 bg-slate-200 rounded-full flex items-center justify-center shadow-inner">
+              <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-600 tracking-wide">TIADA REKOD GAJI</h3>
+            <p class="text-slate-400 mt-2 font-medium">REKOD GAJI AKAN DIPAPARKAN DI SINI</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="modal-form" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90%] overflow-auto animate-fade card-shadow">
+        <div class="sticky top-0 bg-white px-6 py-5 border-b flex items-center justify-between z-10 shadow-sm">
+          <h2 id="modal-title" class="text-xl font-extrabold text-slate-800 tracking-wide">TAMBAH REKOD GAJI</h2>
+          <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-bold transition">✕</button>
+        </div>
+        <div class="p-6 space-y-5">
+          <input type="hidden" id="edit-id">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-bold text-slate-700 mb-2">PEKERJA</label>
+              <select id="form-employee" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none bg-slate-50 font-semibold">
+                <option value="">PILIH PEKERJA</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">BULAN</label>
+                <select id="form-month" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none bg-slate-50 font-semibold">
+                  <option value="1">JANUARI</option>
+                  <option value="2">FEBRUARI</option>
+                  <option value="3">MAC</option>
+                  <option value="4">APRIL</option>
+                  <option value="5">MEI</option>
+                  <option value="6">JUN</option>
+                  <option value="7">JULAI</option>
+                  <option value="8">OGOS</option>
+                  <option value="9">SEPTEMBER</option>
+                  <option value="10">OKTOBER</option>
+                  <option value="11">NOVEMBER</option>
+                  <option value="12">DISEMBER</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">TAHUN</label>
+                <select id="form-year" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none bg-slate-50 font-semibold">
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t-2 border-slate-100 pt-5">
+            <h3 class="font-extrabold text-slate-800 mb-4 flex items-center gap-2"><span class="text-amber-500">💰</span> PENDAPATAN</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">GAJI ASAS (RM)</label>
+                <input type="number" id="form-basic" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">ELAUN BIASA (RM)</label>
+                <input type="number" id="form-allowance" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">ELAUN MINYAK (RM)</label>
+                <input type="number" id="form-oil" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">BONUS (RM)</label>
+                <input type="number" id="form-bonus" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-red-500 mb-1">BAYARAN PENDAHULUAN (RM)</label>
+                <input type="number" id="form-advance" class="w-full px-4 py-2.5 border-2 border-red-200 rounded-lg focus:border-red-500 focus:outline-none font-semibold text-red-600 bg-red-50" value="0" step="0.01">
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t-2 border-slate-100 pt-5">
+            <h3 class="font-extrabold text-slate-800 mb-4 flex items-center gap-2"><span class="text-amber-500">⏰</span> KERJA LEBIH MASA (OT)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">JAM OT</label>
+                <input type="number" id="form-ot-hours" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.5">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">KADAR OT/JAM (RM)</label>
+                <input type="number" id="form-ot-rate" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="10" step="0.01">
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t-2 border-slate-100 pt-5">
+            <h3 class="font-extrabold text-slate-800 mb-4 flex items-center gap-2"><span class="text-amber-500">📉</span> POTONGAN</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">KWSP (RM)</label>
+                <input type="number" id="form-kwsp" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">SOCSO (RM)</label>
+                <input type="number" id="form-socso" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">EIS (RM)</label>
+                <input type="number" id="form-eis" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">POTONGAN LAIN (RM)</label>
+                <input type="number" id="form-other" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800" value="0" step="0.01">
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t-2 border-slate-100 pt-5">
+            <h3 class="font-extrabold text-slate-800 mb-4 flex items-center gap-2"><span class="text-amber-500">🚫</span> CUTI TANPA GAJI</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">HARI CUTI TANPA GAJI</label>
+                <input type="number" id="form-unpaid-days" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800 bg-slate-50" value="0" min="0">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">POTONGAN CUTI (RM)</label>
+                <input type="number" id="form-unpaid-deduction" class="w-full px-4 py-2.5 border-2 border-slate-200 rounded-lg focus:border-amber-500 focus:outline-none font-semibold text-slate-800 bg-slate-50" value="0" step="0.01">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sticky bottom-0 bg-white px-6 py-4 border-t-2 border-slate-100 flex gap-3 justify-end z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <button onclick="closeModal()" class="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition">BATAL</button>
+          <button id="btn-save" onclick="saveRecord()" class="px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold rounded-xl hover:from-amber-600 hover:to-amber-700 transition shadow-lg flex items-center justify-center gap-2 tracking-wide">SIMPAN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="modal-delete" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl w-full max-w-md animate-fade p-8 text-center card-shadow">
+        <div class="w-20 h-20 mx-auto mb-5 bg-red-100 rounded-full flex items-center justify-center shadow-inner">
+          <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </div>
+        <h3 class="text-2xl font-extrabold text-slate-800 mb-2">PADAM REKOD?</h3>
+        <p class="text-slate-500 font-medium mb-8">REKOD GAJI INI AKAN DIPADAM DARI STORAN AWAN SECARA KEKAL.</p>
+        <div class="flex gap-4 justify-center">
+          <button onclick="closeDeleteModal()" class="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition w-full">BATAL</button>
+          <button id="btn-confirm-delete" onclick="confirmDelete()" class="px-6 py-3 bg-red-500 text-white font-extrabold rounded-xl hover:bg-red-600 transition shadow-lg flex items-center justify-center gap-2 w-full">PADAM</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IC Update Modal -->
+    <div id="modal-ic" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl w-full max-w-md animate-fade card-shadow">
+        <div class="px-6 py-5 border-b-2 border-slate-100 flex items-center justify-between">
+          <h2 class="text-lg font-extrabold text-slate-800">KEMASKINI NO. KAD PENGENALAN</h2>
+          <button onclick="closeICModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold transition">✕</button>
+        </div>
+        <div class="p-6">
+          <label class="block text-sm font-bold text-slate-700 mb-2">NO. KAD PENGENALAN</label>
+          <input type="text" id="form-ic" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-semibold text-slate-800" placeholder="CONTOH: 901234-56-7890">
+          <p class="text-xs text-slate-500 mt-3 font-medium leading-relaxed">NO. KP AKAN DIKEMASKINI UNTUK SEMUA REKOD GAJI ANDA YANG SEDIA ADA SECARA AUTOMATIK.</p>
+        </div>
+        <div class="px-6 py-5 border-t-2 border-slate-100 flex gap-3 justify-end bg-slate-50/50 rounded-b-2xl">
+          <button onclick="closeICModal()" class="px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition">BATAL</button>
+          <button id="btn-save-ic" onclick="saveIC()" class="px-8 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-extrabold rounded-xl hover:from-amber-600 hover:to-amber-700 transition shadow-md flex items-center justify-center gap-2">SIMPAN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Print Area (Hidden) -->
+    <div id="print-area" class="hidden"></div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] z-50 animate-fade font-bold tracking-wide border-l-4 border-white"></div>
+  </div>
+
+  <script type="module">
+    // Firebase Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Firebase Initialization
+    const firebaseConfig = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : {};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+    
+    let firebaseUser = null;
+    let unsubscribeSnapshot = null;
+
+    // Employee Data Structure (UPPERCASE)
+    const EMPLOYEES = [
+      { code: 'MZBE092022', name: 'AMMAR ZAKWAN BIN DAUD', dept: 'OPERASI', position: 'PENGURUS ORDER LUAR' },
+      { code: 'MZBE072022', name: 'NUR MAISARAH BINTI AHMAD RIZAL', dept: 'OPERASI', position: 'PENGURUS SHOPEE' },
+      { code: 'MZBE082022', name: 'WAN ADIB ASHRAF BIN AB WAHAB', dept: 'OPERASI', position: 'PENGURUS TIKTOK' },
+      { code: 'MZBE102022', name: 'ATHIRAH BINTI MOHD ZEIN', dept: 'PENGELUARAN', position: 'PEGAWAI OPERASI PENGELUARAN' },
+      { code: 'MZBE012024', name: 'AHMAD BUKHARIE BIN FAIZAL NORHADI', dept: 'PENGELUARAN', position: 'OPERATOR MESIN' },
+      { code: 'MZBE022024', name: 'NURLAILI BINTI ZAHARI', dept: 'PENGELUARAN', position: 'OPERATOR MESIN' },
+      { code: 'MZBE022025', name: 'ABDUL RAHMAN BIN S.HAMID', dept: 'PENGELUARAN', position: 'OPERATOR MESIN' },
+      { code: 'MZBE032025', name: 'MUHAMMAD AIMAN BIN MOHD ZULKIFLI', dept: 'PENGELUARAN', position: 'OPERATOR MESIN' },
+      { code: 'MZBE042025', name: 'FATIN AMIERA BINTI RAZIHA', dept: 'PEMASARAN', position: 'PEGAWAI PEMASARAN' }
+    ];
+
+    const MONTHS = ['', 'JANUARI', 'FEBRUARI', 'MAC', 'APRIL', 'MEI', 'JUN', 'JULAI', 'OGOS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DISEMBER'];
+
+    // App State
+    let currentUser = null;
+    let isAdmin = false;
+    let allRecords = [];
+    let filteredRecords = [];
+    let deleteTarget = null;
+    let isDataLoaded = false;
+
+    // Authenticate with Firebase
+    const initAuth = async () => {
+      try {
+        if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+          await signInWithCustomToken(auth, window.__initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Firebase Auth Error:", error);
+        showToast("RALAT SISTEM, TIDAK DAPAT MENYAMBUNG KE PANGKALAN DATA.", "error");
+      }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      firebaseUser = user;
+      if (user) {
+        document.getElementById('cloud-status').classList.remove('bg-red-400');
+        document.getElementById('cloud-status').classList.add('bg-emerald-400');
+        document.getElementById('cloud-status').title = "BERSAMBUNG KE AWAN";
+        setupRealtimeListener();
+      } else {
+        document.getElementById('cloud-status').classList.remove('bg-emerald-400');
+        document.getElementById('cloud-status').classList.add('bg-red-400');
+        document.getElementById('cloud-status').title = "TERPUTUS DARI AWAN";
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
+      }
+    });
+
+    // Start App Initialization
+    window.onload = () => {
+      initUI();
+      initAuth();
+    };
+
+    // Listen for Realtime Updates from Firestore
+    function setupRealtimeListener() {
+      if (!firebaseUser) return;
+      
+      const recordsRef = collection(db, 'artifacts', appId, 'public', 'data', 'salary_records');
+      
+      unsubscribeSnapshot = onSnapshot(recordsRef, (snapshot) => {
+        allRecords = [];
+        snapshot.forEach(doc => {
+          allRecords.push({ ...doc.data(), __backendId: doc.id });
+        });
         
-        // Simpan ke window supaya boleh diakses oleh skrip Babel
-        window.fb = { initializeApp, getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, query, where };
-    </script>
+        isDataLoaded = true;
+        document.getElementById('loading-records').classList.add('hidden');
+        sortAndApplyData();
+      }, (error) => {
+        console.error("Firestore Error:", error);
+        showToast('RALAT MEMUAT TURUN DATA AWAN.', 'error');
+        document.getElementById('loading-records').classList.add('hidden');
+      });
+    }
 
-    <!-- Aplikasi React -->
-    <script type="text/babel">
-        const { useState, useEffect, useCallback, Fragment, useMemo } = React;
+    // Initialize UI Selectors
+    function initUI() {
+      const yearSelect = document.getElementById('filter-year');
+      const formYearSelect = document.getElementById('form-year');
+      const currentYear = new Date().getFullYear();
+      
+      for (let y = 2022; y <= currentYear + 1; y++) {
+        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+        formYearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+      }
+      formYearSelect.value = currentYear;
+      
+      // Default to Feb 2026 filters
+      document.getElementById('filter-year').value = '2026';
+      document.getElementById('filter-month').value = '2';
 
-        // --- KONFIGURASI GLOBAL ---
-        const APP_ID = 'sistemgajimzbe'; 
-        const MONTHS = ['', 'Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
+      const empSelect = document.getElementById('form-employee');
+      EMPLOYEES.forEach(emp => {
+        empSelect.innerHTML += `<option value="${emp.code}">${emp.name}</option>`;
+      });
+    }
 
-        const DEFAULT_EMPLOYEES = [
-            { code: 'MZBE012024', name: 'AHMAD BUKHARIE BIN FAIZAL NORHADI', dept: 'Pengeluaran', position: 'Operator Mesin', basic: 1800, ic: '040421110053' },
-            { code: 'MZBE092022', name: 'AMMAR ZAKWAN BIN DAUD', dept: 'Operasi', position: 'Pengurus Order Luar', basic: 2100, ic: '980416036979' },
-            { code: 'MZBE102022', name: 'ATHIRAH BINTI MOHD ZEIN', dept: 'Pengeluaran', position: 'Pegawai Operasi Pengeluaran', basic: 2000, ic: '000917110384' },
-            { code: 'MZBE072022', name: 'NUR MAISARAH BINTI AHMAD RIZAL', dept: 'Operasi', position: 'Pengurus Shopee', basic: 2300, ic: '971017385034' },
-            { code: 'MZBE022024', name: 'NURLAILI BINTI ZAHARI', dept: 'Pengeluaran', position: 'Operator Mesin', basic: 1800, ic: '' },
-            { code: 'MZBE082022', name: 'WAN ADIB ASHRAF BIN AB WAHAB', dept: 'Operasi', position: 'Pengurus TikTok', basic: 2300, ic: '000417080975' },
-            { code: 'MZBE022025', name: 'ABDUL RAHMAN BIN S. HAMID', dept: 'Pengeluaran', position: 'Operator Mesin', basic: 1700, ic: '070909030855' },
-            { code: 'MZBE032025', name: 'MUHAMMAD AIMAN BIN MOHD ZULKIFLI', dept: 'Pengeluaran', position: 'Operator Mesin', basic: 1700, ic: '010815110403' },
-            { code: 'MZBE042025', name: 'FATIN AMIERA BINTI RAZIHA', dept: 'Pemasaran', position: 'Pegawai Pemasaran', basic: 1700, ic: '930905115074' },
-            { code: 'MZBEBOSS001', name: 'MUIZZUDDIN BIN AB.LLAH', dept: 'Pentadbiran', position: 'Pengurus Besar', basic: 3500, ic: '990331037699' }
+    function sortAndApplyData() {
+      allRecords.sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year;
+        return b.month - a.month;
+      });
+      applyFilters();
+    }
+
+    // --- Window Expose Functions for HTML bindings ---
+
+    window.handleLogin = function() {
+      const username = document.getElementById('login-username').value.trim().toUpperCase();
+      const password = document.getElementById('login-password').value;
+      const errorEl = document.getElementById('login-error');
+
+      if (username === 'ADMIN' && password === 'admin123') {
+        currentUser = { code: 'ADMIN', name: 'ADMINISTRATOR', isAdmin: true };
+        isAdmin = true;
+        showDashboard();
+        return;
+      }
+
+      const employee = EMPLOYEES.find(e => e.code.toUpperCase() === username && e.code === password);
+      if (employee) {
+        currentUser = { ...employee, isAdmin: false };
+        isAdmin = false;
+        showDashboard();
+        return;
+      }
+
+      errorEl.textContent = 'KOD PEKERJA ATAU KATA LALUAN TIDAK SAH';
+      errorEl.classList.remove('hidden');
+    };
+
+    window.handleLogout = function() {
+      currentUser = null;
+      isAdmin = false;
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-error').classList.add('hidden');
+    };
+
+    function showDashboard() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('user-display').textContent = currentUser.name.toUpperCase();
+      document.getElementById('role-display').textContent = isAdmin ? 'PENTADBIR' : (currentUser.position || '').toUpperCase();
+      
+      if (isAdmin) {
+        document.getElementById('admin-actions').classList.remove('hidden');
+        document.getElementById('btn-update-ic').classList.add('hidden');
+      } else {
+        document.getElementById('admin-actions').classList.add('hidden');
+        document.getElementById('btn-update-ic').classList.remove('hidden');
+      }
+
+      if(!isDataLoaded) {
+          document.getElementById('loading-records').classList.remove('hidden');
+      }
+
+      applyFilters();
+    }
+
+    window.applyFilters = applyFilters;
+    function applyFilters() {
+      const year = document.getElementById('filter-year').value;
+      const month = document.getElementById('filter-month').value;
+
+      filteredRecords = allRecords.filter(r => {
+        if (!isAdmin && r.employee_code !== currentUser.code) return false;
+        if (year && r.year != year) return false;
+        if (month && r.month != month) return false;
+        return true;
+      });
+
+      renderSalaryList();
+    }
+
+    function renderSalaryList() {
+      const container = document.getElementById('salary-list');
+      const noRecords = document.getElementById('no-records');
+      const loadingRecords = document.getElementById('loading-records');
+
+      if(!isDataLoaded) {
+          container.innerHTML = '';
+          noRecords.classList.add('hidden');
+          loadingRecords.classList.remove('hidden');
+          return;
+      }
+
+      loadingRecords.classList.add('hidden');
+
+      if (filteredRecords.length === 0) {
+        container.innerHTML = '';
+        noRecords.classList.remove('hidden');
+        return;
+      }
+
+      noRecords.classList.add('hidden');
+      
+      container.innerHTML = filteredRecords.map(record => {
+        const totalAllowance = (record.allowance || 0) + (record.oil_allowance || 0);
+        const otAmount = (record.ot_hours || 0) * (record.ot_rate || 10);
+        const grossIncome = (record.basic_salary || 0) + totalAllowance + otAmount + (record.bonus || 0);
+        
+        // PENTING: Bayaran pendahuluan tidak ditolak dari Gaji Bersih berdasarkan permintaan
+        const totalDeductions = (record.kwsp || 0) + (record.socso || 0) + (record.eis || 0) + (record.other_deductions || 0) + (record.unpaid_leave_deduction || 0);
+        const netSalary = grossIncome - totalDeductions;
+        
+        const emp = EMPLOYEES.find(e => e.code === record.employee_code) || {};
+
+        return `
+          <div class="bg-white rounded-2xl card-shadow p-6 animate-fade border border-slate-100 uppercase transition-all hover:shadow-[0_15px_50px_rgba(0,0,0,0.12)] hover:-translate-y-1">
+            <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 class="text-xl font-extrabold text-slate-800 tracking-wide">${MONTHS[record.month]} ${record.year}</h3>
+                ${isAdmin ? `<p class="text-sm font-bold text-amber-600 mt-1">${(emp.name || record.employee_name).toUpperCase()}</p>` : ''}
+                <p class="text-xs text-slate-400 font-semibold mt-1 flex items-center gap-2">
+                  <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-500">${(emp.dept || record.department).toUpperCase()}</span>
+                  <span class="bg-slate-100 px-2 py-1 rounded-md text-slate-500">${(emp.position || record.position).toUpperCase()}</span>
+                </p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="printSlip('${record.__backendId}')" class="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition shadow-sm" title="CETAK SLIP">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                </button>
+                <button onclick="downloadSlip('${record.__backendId}')" class="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition shadow-sm" title="MUAT TURUN SLIP">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </button>
+                ${isAdmin ? `
+                  <div class="w-px h-8 bg-slate-200 mx-1"></div>
+                  <button onclick="openEditModal('${record.__backendId}')" class="p-2.5 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition shadow-sm" title="EDIT REKOD">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                  </button>
+                  <button onclick="openDeleteModal('${record.__backendId}')" class="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition shadow-sm" title="PADAM REKOD">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-5 mb-5 shadow-lg relative overflow-hidden">
+              <div class="absolute -right-4 -top-4 opacity-10">
+                <svg class="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>
+              </div>
+              <p class="text-emerald-100 text-xs font-bold tracking-widest mb-1">GAJI BERSIH</p>
+              <p class="text-4xl font-black text-white drop-shadow-md">RM ${netSalary.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm">
+                <p class="text-slate-500 font-bold text-xs tracking-wider mb-1">GAJI ASAS</p>
+                <p class="font-extrabold text-slate-800 text-lg">RM ${(record.basic_salary || 0).toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm">
+                <p class="text-slate-500 font-bold text-xs tracking-wider mb-1">ELAUN</p>
+                <p class="font-extrabold text-slate-800 text-lg">RM ${totalAllowance.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+                <p class="text-[10px] text-slate-400 mt-1 font-semibold">BIASA: RM${(record.allowance || 0).toFixed(2)} | MYK: RM${(record.oil_allowance || 0).toFixed(2)}</p>
+              </div>
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm">
+                <p class="text-slate-500 font-bold text-xs tracking-wider mb-1">OT</p>
+                <p class="font-extrabold text-slate-800 text-lg">RM ${otAmount.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+                <p class="text-[10px] text-slate-400 mt-1 font-semibold">${record.ot_hours || 0}J × RM${(record.ot_rate || 10).toFixed(2)}</p>
+              </div>
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm">
+                <p class="text-slate-500 font-bold text-xs tracking-wider mb-1">BONUS</p>
+                <p class="font-extrabold text-slate-800 text-lg">RM ${(record.bonus || 0).toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+              </div>
+              ${isAdmin && (record.advance_payment || 0) > 0 ? `
+              <div class="bg-red-50 rounded-xl p-4 border border-red-100 shadow-sm">
+                <p class="text-red-600 font-bold text-xs tracking-wider mb-1">ADVANCE</p>
+                <p class="font-extrabold text-red-700 text-lg">-RM ${(record.advance_payment || 0).toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+              </div>
+              ` : ''}
+              ${record.unpaid_leave_days > 0 ? `
+              <div class="bg-orange-50 rounded-xl p-4 border border-orange-100 shadow-sm">
+                <p class="text-orange-600 font-bold text-xs tracking-wider mb-1">CUTI T.GAJI</p>
+                <p class="font-extrabold text-orange-700 text-lg">-RM ${(record.unpaid_leave_deduction || 0).toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+                <p class="text-[10px] text-orange-500 mt-1 font-semibold">${record.unpaid_leave_days} HARI</p>
+              </div>
+              ` : ''}
+              <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 shadow-sm">
+                <p class="text-slate-500 font-bold text-xs tracking-wider mb-1">POTONGAN WJB</p>
+                <p class="font-extrabold text-slate-700 text-lg">-RM ${totalDeductions.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</p>
+                <p class="text-[10px] text-slate-400 mt-1 font-semibold leading-tight">KWSP: RM${(record.kwsp || 0).toFixed(2)} | SOCSO: RM${(record.socso || 0).toFixed(2)}<br>EIS: RM${(record.eis || 0).toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal Operations
+    window.openAddModal = function() {
+      document.getElementById('modal-title').textContent = 'TAMBAH REKOD GAJI';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('form-employee').value = '';
+      document.getElementById('form-month').value = new Date().getMonth() + 1;
+      document.getElementById('form-year').value = new Date().getFullYear();
+      
+      const inputs = ['form-basic', 'form-allowance', 'form-oil', 'form-bonus', 'form-advance', 'form-ot-hours', 'form-kwsp', 'form-socso', 'form-eis', 'form-other', 'form-unpaid-days', 'form-unpaid-deduction'];
+      inputs.forEach(id => document.getElementById(id).value = 0);
+      document.getElementById('form-ot-rate').value = 10;
+      
+      document.getElementById('modal-form').classList.remove('hidden');
+    };
+
+    window.openEditModal = function(id) {
+      const record = allRecords.find(r => r.__backendId === id);
+      if (!record) return;
+
+      document.getElementById('modal-title').textContent = 'EDIT REKOD GAJI';
+      document.getElementById('edit-id').value = id;
+      document.getElementById('form-employee').value = record.employee_code;
+      document.getElementById('form-month').value = record.month;
+      document.getElementById('form-year').value = record.year;
+      document.getElementById('form-basic').value = record.basic_salary || 0;
+      document.getElementById('form-allowance').value = record.allowance || 0;
+      document.getElementById('form-oil').value = record.oil_allowance || 0;
+      document.getElementById('form-bonus').value = record.bonus || 0;
+      document.getElementById('form-advance').value = record.advance_payment || 0;
+      document.getElementById('form-ot-hours').value = record.ot_hours || 0;
+      document.getElementById('form-ot-rate').value = record.ot_rate || 10;
+      document.getElementById('form-kwsp').value = record.kwsp || 0;
+      document.getElementById('form-socso').value = record.socso || 0;
+      document.getElementById('form-eis').value = record.eis || 0;
+      document.getElementById('form-other').value = record.other_deductions || 0;
+      document.getElementById('form-unpaid-days').value = record.unpaid_leave_days || 0;
+      document.getElementById('form-unpaid-deduction').value = record.unpaid_leave_deduction || 0;
+      
+      document.getElementById('modal-form').classList.remove('hidden');
+    };
+
+    window.closeModal = function() {
+      document.getElementById('modal-form').classList.add('hidden');
+    };
+
+    // Save Data to Firestore
+    window.saveRecord = async function() {
+      if (!firebaseUser) return;
+      
+      const empCode = document.getElementById('form-employee').value;
+      if (!empCode) {
+        showToast('SILA PILIH PEKERJA', 'error');
+        return;
+      }
+
+      const emp = EMPLOYEES.find(e => e.code === empCode);
+      const editId = document.getElementById('edit-id').value;
+      const btnSave = document.getElementById('btn-save');
+
+      // Preserve existing IC Number during edits
+      let icNumber = '';
+      if (editId) {
+          const existingRec = allRecords.find(r => r.__backendId === editId);
+          if (existingRec && existingRec.ic_number) {
+              icNumber = existingRec.ic_number;
+          }
+      }
+
+      const recordData = {
+        employee_code: empCode.toUpperCase(),
+        employee_name: emp.name.toUpperCase(),
+        department: emp.dept.toUpperCase(),
+        position: emp.position.toUpperCase(),
+        ic_number: icNumber.toUpperCase(),
+        month: parseInt(document.getElementById('form-month').value),
+        year: parseInt(document.getElementById('form-year').value),
+        basic_salary: parseFloat(document.getElementById('form-basic').value) || 0,
+        allowance: parseFloat(document.getElementById('form-allowance').value) || 0,
+        oil_allowance: parseFloat(document.getElementById('form-oil').value) || 0,
+        ot_hours: parseFloat(document.getElementById('form-ot-hours').value) || 0,
+        ot_rate: parseFloat(document.getElementById('form-ot-rate').value) || 10,
+        bonus: parseFloat(document.getElementById('form-bonus').value) || 0,
+        advance_payment: parseFloat(document.getElementById('form-advance').value) || 0,
+        unpaid_leave_days: parseInt(document.getElementById('form-unpaid-days').value) || 0,
+        unpaid_leave_deduction: parseFloat(document.getElementById('form-unpaid-deduction').value) || 0,
+        kwsp: parseFloat(document.getElementById('form-kwsp').value) || 0,
+        socso: parseFloat(document.getElementById('form-socso').value) || 0,
+        eis: parseFloat(document.getElementById('form-eis').value) || 0,
+        other_deductions: parseFloat(document.getElementById('form-other').value) || 0,
+        updated_at: new Date().toISOString()
+      };
+
+      if (!editId) {
+          recordData.created_at = new Date().toISOString();
+      }
+
+      const recordId = editId || crypto.randomUUID();
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'salary_records', recordId);
+
+      btnSave.disabled = true;
+      btnSave.innerHTML = `<div class="loader" style="border-width:3px;width:18px;height:18px;"></div> MENYIMPAN...`;
+
+      try {
+        await setDoc(docRef, recordData, { merge: true });
+        showToast(editId ? 'REKOD DIKEMASKINI KE AWAN' : 'REKOD DITAMBAH KE AWAN', 'success');
+        closeModal();
+      } catch (error) {
+        console.error("Save Error:", error);
+        showToast("GAGAL MENYIMPAN DATA: " + error.message, "error");
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerHTML = `SIMPAN`;
+      }
+    };
+
+    // Import Feb 2026 Data
+    window.importFeb2026Data = async function() {
+        if (!firebaseUser) return;
+        const btn = document.getElementById('btn-import');
+        btn.disabled = true;
+        btn.innerHTML = `<div class="loader" style="border-width:3px;width:16px;height:16px;"></div> MEMUAT NAIK...`;
+
+        const febData = [
+            { employee_code: 'MZBE012024', basic_salary: 1800, advance_payment: 700, kwsp: 198, ic_number: '040421110053' },
+            { employee_code: 'MZBE092022', basic_salary: 2100, advance_payment: 800, kwsp: 231, ic_number: '980416036979' },
+            { employee_code: 'MZBE102022', basic_salary: 2000, advance_payment: 800, kwsp: 220, ic_number: '000917110384' },
+            { employee_code: 'MZBE072022', basic_salary: 2300, advance_payment: 1000, kwsp: 253, ic_number: '971017385034' },
+            { employee_code: 'MZBE022024', basic_salary: 1800, advance_payment: 0, kwsp: 198, ic_number: '' },
+            { employee_code: 'MZBE082022', basic_salary: 2300, advance_payment: 1000, kwsp: 253, unpaid_leave_days: 4, unpaid_leave_deduction: 353.84, ic_number: '000417080975' },
+            { employee_code: 'MZBE022025', basic_salary: 1700, advance_payment: 700, kwsp: 187, ic_number: '070909030855' },
+            { employee_code: 'MZBE032025', basic_salary: 1700, advance_payment: 700, kwsp: 187, ic_number: '010815110403' },
+            { employee_code: 'MZBE042025', basic_salary: 1700, advance_payment: 0, kwsp: 187, unpaid_leave_days: 12, unpaid_leave_deduction: 784.80, ic_number: '930905115074' }
         ];
 
-        // --- IKON ---
-        const IconLogOut = ({size=18}) => <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>;
-        const IconEdit = ({size=16}) => <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-        const IconPrinter = ({size=18}) => <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>;
-
-        // --- KOMPONEN LOGO ---
-        const BrandLogo = ({ size = "large" }) => (
-            <div className={`flex flex-col items-center justify-center ${size === 'large' ? 'mb-6' : 'mb-0'}`}>
-                <img 
-                    src="./logo.png" 
-                    alt="Logo MBE" 
-                    style={{ height: size === 'large' ? '110px' : '32px', width: 'auto', objectFit: 'contain' }} 
-                    className="logo-flat" 
-                    onError={e => { e.target.onerror=null; e.target.src='https://ui-avatars.com/api/?name=MBE&background=1e293b&color=ffffff&rounded=false&bold=true'; }} 
-                />
-                {size === 'large' && (
-                    <div className="text-center mt-2">
-                        <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase leading-none">Muiz Banner</h1>
-                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.4em] mt-1">Sistem Gaji</p>
-                    </div>
-                )}
-            </div>
-        );
-
-        // --- KOMPONEN LAYAR LOGIN ---
-        const LoginScreen = ({ employees, onLogin, isReady, showToast }) => {
-            const [username, setUsername] = useState('');
-            const [password, setPassword] = useState('');
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                const cleanUser = username.trim().toUpperCase();
-                if(cleanUser === 'ADMIN' && password === 'admin123') {
-                    onLogin({ code: 'ADMIN', name: 'Administrator' }); return;
-                }
-                const emp = employees.find(e => (e?.code || '') === cleanUser);
-                if(emp && password === emp.code) {
-                    onLogin(emp);
-                } else {
-                    showToast("ID atau Kata Laluan tidak sah.", "error");
-                }
-            };
-
-            return (
-                <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-10 w-full max-w-md shadow-2xl border border-slate-200 animate-fade">
-                        <BrandLogo size="large" />
-                        <form onSubmit={handleSubmit} className="space-y-5 mt-8">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Kod Pekerja</label>
-                                <input type="text" value={username} onChange={e=>setUsername(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-blue-500 outline-none uppercase font-bold text-slate-700 transition" placeholder="MZBEXXXX" required/>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Kata Laluan</label>
-                                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-blue-500 outline-none font-bold text-slate-700 transition" placeholder="••••••••" required/>
-                            </div>
-                            <button type="submit" disabled={!isReady} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition disabled:opacity-50">
-                                {isReady ? 'Log Masuk Sistem' : 'Menghubungkan Database...'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- KOMPONEN TAMPILAN GAJI ---
-        function SalaryView({ salaries, employees, isAdmin, importData, print, deleteDoc, db, appId, doc }) {
-            const [year, setYear] = useState(new Date().getFullYear().toString());
-            const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
-            const filtered = salaries.filter(s => s.year === year && s.month === month);
-
-            return (
-                <div className="space-y-6 animate-fade">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex gap-2">
-                            <select value={year} onChange={e=>setYear(e.target.value)} className="p-2 border rounded-lg font-bold bg-slate-50">
-                                {[2024,2025,2026,2027,2028,2029,2030].map(y=><option key={y} value={y.toString()}>{y}</option>)}
-                            </select>
-                            <select value={month} onChange={e=>setMonth(e.target.value)} className="p-2 border rounded-lg font-bold bg-slate-50">
-                                {MONTHS.map((m,i)=> i>0 ? <option key={i} value={i.toString()}>{m}</option> : null)}
-                            </select>
-                        </div>
-                        {isAdmin && (
-                            <button onClick={()=>importData(month, year)} className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition">📥 Jana Data Standard</button>
-                        )}
-                    </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filtered.length === 0 ? (
-                            <div className="col-span-full text-center py-20 text-slate-400 border-2 border-dashed rounded-3xl">
-                                Tiada rekod untuk bulan ini. {isAdmin && 'Sila tekan butang "Jana Data Standard".'}
-                            </div>
-                        ) : filtered.map(s => {
-                            const net = (s?.basic_salary || 0) - (s?.kwsp || 0);
-                            return (
-                                <div key={s.id} className="bg-white p-5 rounded-3xl shadow-sm border relative hover:shadow-md transition">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="overflow-hidden">
-                                            <h3 className="font-bold text-slate-800 uppercase text-sm truncate">{s.empName}</h3>
-                                            <p className="text-xs text-slate-400 mt-1 font-mono">{s.empCode}</p>
-                                        </div>
-                                        <button onClick={()=>print(s)} className="text-blue-500 p-2 hover:bg-blue-50 rounded-xl transition">
-                                            <IconPrinter />
-                                        </button>
-                                    </div>
-                                    <div className="bg-emerald-50 p-4 rounded-2xl mb-4 text-center border border-emerald-100">
-                                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Gaji Bersih</p>
-                                        <p className="text-2xl font-black text-emerald-700">RM {net.toLocaleString('ms-MY',{minimumFractionDigits:2})}</p>
-                                    </div>
-                                    {isAdmin && (
-                                        <button onClick={async()=>{if(window.confirm("Hapus rekod ini?")) await deleteDoc(doc(db,'artifacts',appId,'public','data','salaries',s.id))}} className="w-full py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition">Hapus Rekod</button>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        }
-
-        // --- KOMPONEN TAMPILAN ADMIN (DIREKTORI) ---
-        function AdminView({ employees, deleteDoc, doc, db, appId, setDoc, showToast }) {
-            const [form, setForm] = useState(null); // Tukar nama dari editForm ke form untuk betulkan ralat
-
-            const save = async (e) => {
-                e.preventDefault();
-                try {
-                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees', form.code.toUpperCase()), { ...form, code: form.code.toUpperCase(), name: form.name.toUpperCase(), basic: parseFloat(form.basic)||0 }, {merge:true});
-                    showToast("Maklumat Tersimpan!", "success"); setForm(null);
-                } catch(err) { showToast("Gagal menyimpan.", "error"); }
-            };
-
-            return (
-                <div className="bg-white rounded-3xl shadow-sm border overflow-hidden animate-fade">
-                    <div className="p-6 bg-slate-50 border-b flex justify-between items-center">
-                        <h3 className="font-black text-xl text-slate-800 tracking-tight">Direktori Pekerja</h3>
-                        <button onClick={()=>setForm({code:'',name:'',basic:0,ic:'',dept:'',position:''})} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-600/20">Tambah Pekerja</button>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
-                            <thead className="bg-white text-xs text-slate-400 font-bold uppercase border-b-2">
-                                <tr><th className="p-4">Kod</th><th className="p-4">Nama</th><th className="p-4">Jawatan</th><th className="p-4 text-right">Tindakan</th></tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {employees.map(e=>(
-                                    <tr key={e.code} className="hover:bg-slate-50 transition">
-                                        <td className="p-4 font-mono font-bold text-slate-500">{e.code}</td>
-                                        <td className="p-4 font-bold text-slate-800 uppercase">{e.name}</td>
-                                        <td className="p-4 text-xs font-medium text-slate-600">{e.position}<br/><span className="text-blue-500">{e.dept}</span></td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button onClick={()=>setForm(e)} className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold transition flex items-center gap-1">
-                                                    <IconEdit size={14} /> Edit
-                                                </button>
-                                                <button onClick={async()=> {if(window.confirm("Hapus pekerja ini dari sistem?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees', e.code))}} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition">
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h12m-9 0v10a2 2 0 00 2 2h4a2 2 0 00 2-2V6M8 6V4a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    {form && (
-                        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-fade">
-                                <h2 className="font-black text-2xl mb-6 border-b pb-4">Profil Pekerja</h2>
-                                <form onSubmit={save} className="space-y-4">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase">Kod Login (ID)</label>
-                                        <input type="text" placeholder="KOD LOGIN" value={form.code} onChange={e=>setForm({...form,code:e.target.value})} className="w-full p-3 border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-blue-500 outline-none uppercase font-mono" required/>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase">Nama Penuh</label>
-                                        <input type="text" placeholder="NAMA PENUH" value={form.name} onChange={e=>setForm({...form,name:e.target.value.toUpperCase()})} className="w-full p-3 border-2 border-slate-100 bg-slate-50 rounded-xl focus:border-blue-500 outline-none uppercase" required/>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase">Gaji Asas Bulanan</label>
-                                        <input type="number" placeholder="GAJI POKOK (RM)" value={form.basic} onChange={e=>setForm({...form,basic:e.target.value})} className="w-full p-4 border-2 border-emerald-100 bg-emerald-50/20 rounded-xl text-lg font-black text-emerald-800" required/>
-                                    </div>
-                                    <div className="flex gap-3 pt-6">
-                                        <button type="button" onClick={()=>setForm(null)} className="flex-1 bg-slate-100 py-4 rounded-xl font-bold">Batal</button>
-                                        <button type="submit" className="flex-[2] bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-600/30">Simpan Profil</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        // ==========================================
-        // MAIN APP COMPONENT
-        // ==========================================
-        function MainApp() {
-            const [fbUser, setFbUser] = useState(null);
-            const [currentUser, setCurrentUser] = useState(null);
-            const [activeTab, setActiveTab] = useState('salary');
-            const [employees, setEmployees] = useState([]);
-            const [salaries, setSalaries] = useState([]);
-            const [toast, setToast] = useState(null);
-            const [isReady, setIsReady] = useState(false);
-
-            // Inisialisasi Firebase Services dari window.fb
-            const { initializeApp, getFirestore, collection, doc, onSnapshot, getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, setDoc, deleteDoc } = window.fb;
-            
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-                apiKey: "AIzaSyAd_sBPBJ4Zru0gbX8dCD9FxJ4Qc0Dt7-Q",
-                authDomain: "sistemgajimuiz.firebaseapp.com",
-                projectId: "sistemgajimuiz",
-                storageBucket: "sistemgajimuiz.firebasestorage.app",
-                messagingSenderId: "971845171525",
-                appId: "1:971845171525:web:a4ba8a5848d2262dac262c"
-            };
-
-            const appId = typeof __app_id !== 'undefined' ? __app_id : APP_ID;
-            
-            const app = useMemo(() => initializeApp(firebaseConfig), []);
-            const db = useMemo(() => getFirestore(app), [app]);
-            const auth = useMemo(() => getAuth(app), [app]);
-
-            const showToast = useCallback((msg, type = 'info') => {
-                setToast({ msg, type });
-                setTimeout(() => setToast(null), 3500);
-            }, []);
-
-            // 1. Logika Autentikasi
-            useEffect(() => {
-                const init = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else { await signInAnonymously(auth); }
-                    } catch (e) { console.warn("Autentikasi Gagal:", e.message); }
+        try {
+            for (const data of febData) {
+                const emp = EMPLOYEES.find(e => e.code === data.employee_code) || {};
+                const recordData = {
+                    employee_code: data.employee_code.toUpperCase(),
+                    employee_name: (emp.name || '').toUpperCase(),
+                    department: (emp.dept || '').toUpperCase(),
+                    position: (emp.position || '').toUpperCase(),
+                    ic_number: (data.ic_number || '').toUpperCase(),
+                    month: 2,
+                    year: 2026,
+                    basic_salary: data.basic_salary || 0,
+                    allowance: 0,
+                    oil_allowance: 0,
+                    ot_hours: 0,
+                    ot_rate: 10,
+                    bonus: 0,
+                    advance_payment: data.advance_payment || 0,
+                    unpaid_leave_days: data.unpaid_leave_days || 0,
+                    unpaid_leave_deduction: data.unpaid_leave_deduction || 0,
+                    kwsp: data.kwsp || 0,
+                    socso: 0,
+                    eis: 0,
+                    other_deductions: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 };
-                init();
-                const unsubscribe = onAuthStateChanged(auth, user => setFbUser(user));
-                return () => unsubscribe();
-            }, [auth]);
-
-            // 2. Logika Pengambilan Data (Mendengar Perubahan secara Langsung)
-            useEffect(() => {
-                if (!fbUser) return;
-                const bPath = ['artifacts', appId, 'public', 'data'];
                 
-                const unsubEmp = onSnapshot(collection(db, ...bPath, 'employees'), snap => {
-                    const emps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    setEmployees(emps);
-                    setIsReady(true);
-                }, err => console.warn("Akses Ditolak (Emp):", err.message));
-
-                const unsubSal = onSnapshot(collection(db, ...bPath, 'salaries'), snap => {
-                    setSalaries(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-                }, err => console.warn("Akses Ditolak (Sal):", err.message));
-
-                return () => { unsubEmp(); unsubSal(); };
-            }, [fbUser, appId, db]);
-
-            // Fungsi Jana Data (Wajib tekan untuk membetulkan "Pekerja Tidak Diketahui")
-            const importStandardData = async (targetMonth, targetYear) => {
-                if(!window.confirm(`Jana data standard untuk bulan ${MONTHS[parseInt(targetMonth)]} ${targetYear}?`)) return;
-                showToast(`Menjana data standard...`, 'info');
-                try {
-                    for (const d of DEFAULT_EMPLOYEES) {
-                        // Simpan profil pekerja ke database
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'employees', d.code), d, {merge:true});
-                        
-                        // Simpan rekod gaji standard
-                        const recordId = `sal_${d.code}_${targetYear}_${targetMonth}`;
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'salaries', recordId), { 
-                            empCode: d.code, 
-                            empName: d.name, 
-                            icNumber: d.ic, 
-                            dept: d.dept, 
-                            position: d.position, 
-                            year: targetYear, 
-                            month: targetMonth, 
-                            basic_salary: d.basic, 
-                            kwsp: (d.basic * 0.11), 
-                            advance_payment: 0, 
-                            updatedAt: new Date().toISOString() 
-                        }, {merge:true});
-                    }
-                    showToast(`Selesai! Semua nama telah dikemaskini.`, 'success');
-                } catch(err) { showToast('Gagal. Periksa Firebase Rules.', 'error'); }
-            };
-
-            const printSlip = (sal) => {
-                const net = (sal?.basic_salary || 0) - (sal?.kwsp || 0);
-                const html = `<html><head><title>Slip Gaji</title><style>body{font-family:sans-serif;padding:40px;line-height:1.6} .row{display:flex;justify-content:space-between;border-bottom:1px dashed #ccc;padding:5px 0} .header{text-align:center;margin-bottom:30px}</style></head><body><div class="header"><h2>MUIZ BANNER EMPIRE</h2><p>Penyata Gaji ${MONTHS[parseInt(sal.month)]} ${sal.year}</p></div><div style="background:#f4f4f4;padding:15px;border-radius:8px;margin-bottom:20px"><p><b>NAMA:</b> ${sal.empName}<br><b>KOD:</b> ${sal.empCode}</p></div><div class="row"><span>Gaji Asas</span><span>RM ${sal.basic_salary.toFixed(2)}</span></div><div class="row"><span>KWSP (11%)</span><span>-RM ${sal.kwsp.toFixed(2)}</span></div><br><h3 style="text-align:right">BERSIH: RM ${net.toFixed(2)}</h3></body></html>`;
-                const w = window.open('','_blank'); w.document.write(html); w.document.close(); setTimeout(()=>w.print(), 500);
-            };
-
-            if (!currentUser) return <LoginScreen employees={employees} onLogin={setCurrentUser} isReady={isReady} showToast={showToast} />;
-
-            return (
-                <div className="min-h-screen flex flex-col bg-slate-50">
-                    <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-30">
-                        <div className="flex items-center gap-4">
-                            <BrandLogo size="small" />
-                            <div><h1 className="font-bold tracking-tight">Sistem Gaji MBE</h1><p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest">{currentUser.name}</p></div>
-                        </div>
-                        <button onClick={() => setCurrentUser(null)} className="bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2">Log Keluar</button>
-                    </header>
-
-                    <div className="bg-white border-b shadow-sm sticky top-[68px] z-20 overflow-x-auto hide-scroll">
-                        <div className="max-w-7xl mx-auto px-4 flex gap-6 whitespace-nowrap">
-                            <button onClick={()=>setActiveTab('salary')} className={`px-4 py-4 font-bold text-sm border-b-2 transition-colors ${activeTab==='salary'?'border-blue-600 text-blue-700':'border-transparent text-slate-500'}`}>💰 Urusan Gaji</button>
-                            {currentUser.code === 'ADMIN' && <button onClick={()=>setActiveTab('admin')} className={`px-4 py-4 font-bold text-sm border-b-2 transition-colors ${activeTab==='admin'?'border-blue-600 text-blue-700':'border-transparent text-slate-500'}`}>👨‍💼 Direktori Pekerja</button>}
-                        </div>
-                    </div>
-
-                    <main className="flex-1 p-4 md:p-6 overflow-y-auto max-w-7xl mx-auto w-full">
-                        {activeTab === 'salary' ? (
-                            <SalaryView db={db} appId={appId} salaries={salaries} employees={employees} isAdmin={currentUser.code === 'ADMIN'} importData={importStandardData} print={printSlip} deleteDoc={deleteDoc} doc={doc} />
-                        ) : (
-                            <AdminView db={db} appId={appId} employees={employees} deleteDoc={deleteDoc} doc={doc} setDoc={setDoc} showToast={showToast} />
-                        )}
-                    </main>
-
-                    {toast && (
-                        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-2xl shadow-2xl font-bold text-white z-50 flex items-center gap-3 animate-fade ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
-                            {toast.msg}
-                        </div>
-                    )}
-                </div>
-            );
+                const recordId = `feb2026_${data.employee_code}`;
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'salary_records', recordId);
+                await setDoc(docRef, recordData, { merge: true });
+            }
+            showToast('DATA FEB 2026 BERJAYA DIIMPORT KE AWAN!', 'success');
+        } catch (error) {
+            console.error(error);
+            showToast('RALAT IMPORT: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `📥 IMPORT DATA FEB 2026`;
+            
+            document.getElementById('filter-year').value = '2026';
+            document.getElementById('filter-month').value = '2';
+            window.applyFilters();
         }
+    };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MainApp />);
-    </script>
+    // Delete Operations with Firestore
+    window.openDeleteModal = function(id) {
+      deleteTarget = id;
+      document.getElementById('modal-delete').classList.remove('hidden');
+    };
+
+    window.closeDeleteModal = function() {
+      deleteTarget = null;
+      document.getElementById('modal-delete').classList.add('hidden');
+    };
+
+    window.confirmDelete = async function() {
+      if (!firebaseUser || !deleteTarget) return;
+
+      const btnDel = document.getElementById('btn-confirm-delete');
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'salary_records', deleteTarget);
+
+      btnDel.disabled = true;
+      btnDel.innerHTML = `<div class="loader" style="border-width:3px;width:18px;height:18px;"></div> MEMADAM...`;
+
+      try {
+          await deleteDoc(docRef);
+          showToast('REKOD BERJAYA DIPADAM', 'success');
+          closeDeleteModal();
+      } catch (error) {
+          console.error("Delete Error:", error);
+          showToast('GAGAL MEMADAM DATA.', 'error');
+      } finally {
+          btnDel.disabled = false;
+          btnDel.innerHTML = `PADAM`;
+      }
+    };
+
+    // IC Modal Functions with Firestore
+    window.openICModal = function() {
+      const userRecords = allRecords.filter(r => r.employee_code === currentUser.code);
+      const existingIC = userRecords.length > 0 ? userRecords[0].ic_number : '';
+      document.getElementById('form-ic').value = existingIC || '';
+      document.getElementById('modal-ic').classList.remove('hidden');
+    };
+
+    window.closeICModal = function() {
+      document.getElementById('modal-ic').classList.add('hidden');
+    };
+
+    window.saveIC = async function() {
+      if(!firebaseUser) return;
+      
+      const newIC = document.getElementById('form-ic').value.trim().toUpperCase();
+      const userRecords = allRecords.filter(r => r.employee_code === currentUser.code);
+
+      if (userRecords.length === 0) {
+        showToast('TIADA REKOD GAJI UNTUK DIKEMASKINI SETAKAT INI', 'error');
+        return;
+      }
+
+      const btnSave = document.getElementById('btn-save-ic');
+      btnSave.disabled = true;
+      btnSave.innerHTML = `<div class="loader" style="border-width:3px;width:18px;height:18px;"></div> MENYIMPAN...`;
+
+      try {
+          // Update all records for this user in Firestore
+          for(const record of userRecords) {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'salary_records', record.__backendId);
+              await setDoc(docRef, { ic_number: newIC }, { merge: true });
+          }
+          showToast('NO. KP BERJAYA DIKEMASKINI KE AWAN', 'success');
+          closeICModal();
+      } catch(error) {
+          console.error("Update IC Error:", error);
+          showToast("GAGAL MENGEMASKINI NO KP.", "error");
+      } finally {
+          btnSave.disabled = false;
+          btnSave.innerHTML = `SIMPAN`;
+      }
+    };
+
+    // HTML Generate Slip Gaji
+    function generateSlipHTML(record) {
+      const emp = EMPLOYEES.find(e => e.code === record.employee_code) || {};
+      const totalAllowance = (record.allowance || 0) + (record.oil_allowance || 0);
+      const otAmount = (record.ot_hours || 0) * (record.ot_rate || 10);
+      const grossIncome = (record.basic_salary || 0) + totalAllowance + otAmount + (record.bonus || 0);
+      
+      const totalDeductions = (record.kwsp || 0) + (record.socso || 0) + (record.eis || 0) + (record.other_deductions || 0) + (record.unpaid_leave_deduction || 0);
+      const netSalary = grossIncome - totalDeductions;
+
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>SLIP GAJI - ${MONTHS[record.month]} ${record.year}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; text-transform: uppercase; color: #1e293b; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f59e0b; padding-bottom: 25px; }
+            .logo { margin-bottom: 15px; }
+            .logo img { max-height: 80px; max-width: 250px; object-fit: contain; }
+            .company-name { font-size: 26px; font-weight: 800; color: #0f172a; letter-spacing: 1px; margin-bottom: 5px; }
+            .slip-title { font-size: 16px; color: #64748b; font-weight: 600; letter-spacing: 2px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 35px; }
+            .info-box { background: #f8fafc; padding: 18px; border-radius: 10px; border: 1px solid #e2e8f0; }
+            .info-label { font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 800; letter-spacing: 1px;}
+            .info-value { font-size: 15px; font-weight: 700; color: #0f172a; }
+            .section { margin-bottom: 25px; }
+            .section-title { font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;}
+            .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #cbd5e1; }
+            .row:last-child { border-bottom: none; }
+            .row-label { color: #475569; font-weight: 600; font-size: 14px; }
+            .row-value { font-weight: 700; color: #0f172a; font-size: 14px; }
+            .total-box { background: #0f172a; color: white; padding: 25px; border-radius: 12px; text-align: center; margin-top: 30px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+            .total-label { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #cbd5e1; margin-bottom: 5px; }
+            .total-value { font-size: 36px; font-weight: 900; color: #10b981; }
+            .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+            .highlight { color: #ef4444; }
+            .highlight-green { color: #10b981; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="logo">
+              <img src="logo.png" alt="MUIZ BANNER EMPIRE LOGO" onerror="this.style.display='none'">
+            </div>
+            <div class="company-name">MUIZ BANNER EMPIRE</div>
+            <div class="slip-title">SLIP GAJI - ${MONTHS[record.month]} ${record.year}</div>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-box">
+              <div class="info-label">NAMA PEKERJA</div>
+              <div class="info-value">${(emp.name || record.employee_name).toUpperCase()}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">KOD PEKERJA</div>
+              <div class="info-value">${record.employee_code.toUpperCase()}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">JABATAN</div>
+              <div class="info-value">${(emp.dept || record.department).toUpperCase()}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">JAWATAN</div>
+              <div class="info-value">${(emp.position || record.position).toUpperCase()}</div>
+            </div>
+            ${record.ic_number ? `
+            <div class="info-box" style="grid-column: span 2;">
+              <div class="info-label">NO. KAD PENGENALAN</div>
+              <div class="info-value">${record.ic_number.toUpperCase()}</div>
+            </div>
+            ` : ''}
+          </div>
+
+          <div class="section">
+            <div class="section-title"><span>💰 PENDAPATAN</span></div>
+            <div class="row"><span class="row-label">GAJI ASAS</span><span class="row-value">RM ${(record.basic_salary || 0).toFixed(2)}</span></div>
+            ${record.allowance > 0 ? `<div class="row"><span class="row-label">ELAUN BIASA</span><span class="row-value">RM ${(record.allowance || 0).toFixed(2)}</span></div>` : ''}
+            ${record.oil_allowance > 0 ? `<div class="row"><span class="row-label">ELAUN MINYAK</span><span class="row-value">RM ${(record.oil_allowance || 0).toFixed(2)}</span></div>` : ''}
+            ${record.ot_hours > 0 ? `<div class="row"><span class="row-label">OT (${record.ot_hours || 0} JAM × RM${(record.ot_rate || 10).toFixed(2)})</span><span class="row-value">RM ${otAmount.toFixed(2)}</span></div>` : ''}
+            ${record.bonus > 0 ? `<div class="row"><span class="row-label">BONUS</span><span class="row-value">RM ${(record.bonus || 0).toFixed(2)}</span></div>` : ''}
+            ${record.advance_payment > 0 ? `<div class="row"><span class="row-label">BAYARAN PENDAHULUAN</span><span class="row-value highlight">-RM ${(record.advance_payment || 0).toFixed(2)}</span></div>` : ''}
+            <div class="row" style="font-weight: 800; border-top: 2px solid #cbd5e1; padding-top: 15px; margin-top: 5px;"><span class="row-label" style="color:#0f172a">JUMLAH PENDAPATAN</span><span class="row-value highlight-green">RM ${grossIncome.toFixed(2)}</span></div>
+          </div>
+
+          <div class="section">
+            <div class="section-title"><span>📉 POTONGAN</span></div>
+            <div class="row"><span class="row-label">KWSP</span><span class="row-value">RM ${(record.kwsp || 0).toFixed(2)}</span></div>
+            ${record.socso > 0 ? `<div class="row"><span class="row-label">SOCSO</span><span class="row-value">RM ${(record.socso || 0).toFixed(2)}</span></div>` : ''}
+            ${record.eis > 0 ? `<div class="row"><span class="row-label">EIS</span><span class="row-value">RM ${(record.eis || 0).toFixed(2)}</span></div>` : ''}
+            ${record.other_deductions > 0 ? `<div class="row"><span class="row-label">POTONGAN LAIN</span><span class="row-value">RM ${(record.other_deductions || 0).toFixed(2)}</span></div>` : ''}
+            ${record.unpaid_leave_days > 0 ? `
+            <div class="row"><span class="row-label">CUTI TANPA GAJI (${record.unpaid_leave_days} HARI)</span><span class="row-value">RM ${(record.unpaid_leave_deduction || 0).toFixed(2)}</span></div>
+            ` : ''}
+            <div class="row" style="font-weight: 800; border-top: 2px solid #cbd5e1; padding-top: 15px; margin-top: 5px;"><span class="row-label" style="color:#0f172a">JUMLAH POTONGAN</span><span class="row-value highlight">RM ${totalDeductions.toFixed(2)}</span></div>
+          </div>
+
+          <div class="total-box">
+            <div class="total-label">GAJI BERSIH</div>
+            <div class="total-value">RM ${netSalary.toLocaleString('ms-MY', { minimumFractionDigits: 2 })}</div>
+          </div>
+
+          <div class="footer">
+            <p>SLIP GAJI INI DIJANA SECARA AUTOMATIK OLEH SISTEM PENGURUSAN GAJI MUIZ BANNER EMPIRE</p>
+            <p>DIJANA PADA: ${new Date().toLocaleDateString('ms-MY')} ${new Date().toLocaleTimeString('ms-MY')}</p>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+
+    // Print & Download Operations
+    window.printSlip = function(id) {
+      const record = allRecords.find(r => r.__backendId === id);
+      if (!record) return;
+
+      const slipHTML = generateSlipHTML(record);
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(slipHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); printWindow.close(); }, 500); // Masa tambahan untuk logo dimuatkan sebelum cetak
+    };
+
+    window.downloadSlip = function(id) {
+      const record = allRecords.find(r => r.__backendId === id);
+      if (!record) return;
+
+      const slipHTML = generateSlipHTML(record);
+      const blob = new Blob([slipHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SLIP_GAJI_${record.employee_code.toUpperCase()}_${MONTHS[record.month]}_${record.year}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('SLIP GAJI BERJAYA DIMUAT TURUN', 'success');
+    };
+
+    // Toast UI Component
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] z-50 animate-fade font-bold tracking-wide border-l-4 transition-all duration-300 uppercase';
+      
+      if (type === 'success') {
+        toast.classList.add('bg-emerald-500', 'text-white', 'border-emerald-700');
+      } else if (type === 'error') {
+        toast.classList.add('bg-red-500', 'text-white', 'border-red-700');
+      } else {
+        toast.classList.add('bg-slate-800', 'text-white', 'border-slate-900');
+      }
+      
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    // Event Listeners for Login
+    document.getElementById('login-password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') window.handleLogin();
+    });
+    document.getElementById('login-username').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') document.getElementById('login-password').focus();
+    });
+
+  </script>
 </body>
 </html>
